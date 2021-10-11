@@ -14,7 +14,7 @@ provider:
   lambdaHashingVersion: '20201221'
 
   stage: ${opt:stage, 'dev'}
-  region: ${opt:region, 'us-east-1'}
+  region: ${opt:region, 'us-east-2'}
 
   tracing:
     lambda: true
@@ -57,6 +57,11 @@ functions:
           path: todos
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
   # TODO: Configure this function - 
   # Provide iamRoleStatements property. Decide the Actions and AWS Resource. 
