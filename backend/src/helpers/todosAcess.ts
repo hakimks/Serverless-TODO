@@ -6,7 +6,11 @@ import { TodoItem } from '../models/TodoItem'
 import { TodoUpdate } from '../models/TodoUpdate';
 
 const XAWS = AWSXRay.captureAWS(AWS)
-
+const s3 = new XAWS.S3({
+    signatureVersion: 'v4'
+  })
+const bucketName = process.env.ATTACHMENT_S3_BUCKET
+const urlExpiration = process.env.SIGNED_URL_EXPIRATION
 const logger = createLogger('TodosAccess')
 
 // TODO: Implement the dataLayer logic
@@ -109,6 +113,19 @@ export class TodosAccess {
         }).promise()
         
       }
+
+      async createAttachmentPresignedUrl(todoId: string): Promise<string> {
+        console.log("Generating URL");
+
+        const url = s3.getSignedUrl('putObject', {
+            Bucket: bucketName,
+            Key: todoId,
+            Expires: urlExpiration,
+        });
+        console.log(url);
+
+        return url as string;
+    }
     
 
 }

@@ -35,3 +35,7 @@ export async function updateTodo(updateTodoRequest: UpdateTodoRequest, userIdUpd
 export async function deleteTodo(userId: string, todoId: string){
     return await todoAccess.deleteTodo(userId, todoId)
 }
+
+export function createAttachmentPresignedUrl(todoId: string): Promise<string> {
+    return todoAccess.createAttachmentPresignedUrl(todoId);
+}
