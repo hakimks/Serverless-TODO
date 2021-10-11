@@ -97,7 +97,7 @@ functions:
       - Effect: Allow
        Action:
         - dynamodb: UpdateItem
-        - dynamodb: dynamodb:GetItem
+        - dynamodb: GetItem
           Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
 
@@ -111,6 +111,13 @@ functions:
       - http:
           method: delete
           path: todos/{todoId}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+        - dynamodb: DeleteItem
+        - dynamodb: GetItem
+          Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements
