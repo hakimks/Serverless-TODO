@@ -26,3 +26,8 @@ export async function createTodo(createTodoRequest: CreateTodoRequest, userId: s
         done: false,
     })
 }
+
+export async function updateTodo(updateTodoRequest: UpdateTodoRequest, userIdUpdate: string, todoIdUpdate: string) {
+
+    return await todoAccess.updateTodo(updateTodoRequest, userIdUpdate, todoIdUpdate);
+}

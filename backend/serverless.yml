@@ -93,6 +93,15 @@ functions:
       - http:
           method: patch
           path: todos/{todoId}
+    iamRoleStatements:
+      - Effect: Allow
+       Action:
+        - dynamodb: UpdateItem
+        - dynamodb: dynamodb:GetItem
+          Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+
+
+
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements
