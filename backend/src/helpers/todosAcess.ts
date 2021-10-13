@@ -16,7 +16,7 @@ const logger = createLogger('TodosAccess')
 // TODO: Implement the dataLayer logic
 export class TodosAccess {
     constructor(
-        private readonly docClient: DocumentClient = createDynamoDBClient(),
+        private readonly docClient: DocumentClient = new AWS.DynamoDB.DocumentClient(),
         private readonly todoTable = process.env.TODO_TABLE
     ) {
     }
@@ -130,14 +130,14 @@ export class TodosAccess {
 }
   
 
-function createDynamoDBClient() {
-    if (process.env.IS_OFFLINE) {
-        console.log("Creating a local DynamoDB instance");
-        return new XAWS.DynamoDB.DocumentClient({
-            region: "localhost",
-            endpoint: "http://localhost:8000"
-        });
-    }
-    return new XAWS.DynamoDB.DocumentClient();
-}
+// function createDynamoDBClient() {
+//     if (process.env.IS_OFFLINE) {
+//         console.log("Creating a local DynamoDB instance");
+//         return new XAWS.DynamoDB.DocumentClient({
+//             region: "localhost",
+//             endpoint: "http://localhost:8000"
+//         });
+//     }
+//     return new XAWS.DynamoDB.DocumentClient();
+// }
 

@@ -25,7 +25,7 @@
     "serverless-plugin-canary-deployments": "^0.4.7",
     "serverless-plugin-tracing": "^2.0.0",
     "serverless-reqvalidator-plugin": "^1.0.3",
-    "serverless-webpack": "^5.2.0",
+    "serverless-webpack": "^5.3.5",
     "ts-loader": "^5.3.3",
     "typescript": ">=3.8.0",
     "webpack": "^4.29.6"
