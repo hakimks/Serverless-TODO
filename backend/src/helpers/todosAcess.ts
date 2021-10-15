@@ -16,29 +16,29 @@ const logger = createLogger('TodosAccess')
 // TODO: Implement the dataLayer logic
 export class TodosAccess {
     constructor(
-        private readonly docClient: DocumentClient = new AWS.DynamoDB.DocumentClient(),
-        private readonly todoTable = process.env.TODO_TABLE
+        private readonly docClient: DocumentClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'}),
+        private readonly todoTable = process.env.TODOS_TABLE,
+        private readonly indexName = process.env.TODOS_CREATED_AT_INDEX
     ) {
     }
 
-
-    async getAllToDos(userID: string): Promise<TodoItem[]> {
-        console.log(this.todoTable);
-        logger.info("UserId", userID)
-        const result = await this.docClient
-            .query({
-                TableName: this.todoTable,
-                //IndexName: 'index-name',
-                KeyConditionExpression: 'userId = :paritionKey',
-                ExpressionAttributeValues: {
-                    ':paritionKey': userID
-            }
-
-            }).promise();
-            const items = result.Items;
-            console.log(items)
-            return items as TodoItem[];
-    }
+    // gets all todos
+    async getTodosForUser(userId: string): Promise<TodoItem[]> {
+        console.log('Getting all todos')
+        logger.info("UserId", userId)
+        const result = await this.docClient.query({
+          TableName: this.todoTable,
+          IndexName: this.indexName,
+          KeyConditionExpression: 'userId = :userId',
+          ExpressionAttributeValues: {
+              ':userId': userId
+          }
+        }).promise()
+          
+        const items = result.Items
+    
+        return items as TodoItem[]
+      }
 
     async createTodo(todoItem: TodoItem): Promise<TodoItem> {
         await this.docClient.put({

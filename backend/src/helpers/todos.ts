@@ -12,7 +12,7 @@ const logger = createLogger('todos')
 const todoAccess = new TodosAccess()
 
 export async function getTodosForUser(userId: string): Promise<TodoItem[]>{
-    return todoAccess.getAllToDos(userId)
+    return todoAccess.getTodosForUser(userId)
 }
 
 export async function createTodo(createTodoRequest: CreateTodoRequest, userId: string): Promise<TodoItem>{
