@@ -9,7 +9,6 @@ const XAWS = AWSXRay.captureAWS(AWS)
 const s3 = new XAWS.S3({
     signatureVersion: 'v4'
   })
-const bucketName = process.env.ATTACHMENT_S3_BUCKET
 const urlExpiration = process.env.SIGNED_URL_EXPIRATION
 const logger = createLogger('TodosAccess')
 
@@ -18,7 +17,8 @@ export class TodosAccess {
     constructor(
         private readonly docClient: DocumentClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'}),
         private readonly todoTable = process.env.TODOS_TABLE,
-        private readonly indexName = process.env.TODOS_CREATED_AT_INDEX
+        private readonly indexName = process.env.TODOS_CREATED_AT_INDEX,
+        private readonly bucketName = process.env.ATTACHMENT_S3_BUCKET
     ) {
     }
 
@@ -49,50 +49,67 @@ export class TodosAccess {
         return todoItem
     }
 
-    async updateTodo(updatedTodo: TodoUpdate, userId: string, todoId: string): Promise<TodoUpdate> {
-
-
-        var params = {
-            TableName: this.todoTable,
-            Key: {
-                "userId": userId,
-                "todoId": todoId
-
-            },
-            UpdateExpression: "set #name_todo = :n,#dueDate_todo = :dd,#done_todo = :dn",
-            ExpressionAttributeValues: {
-                ":n": updatedTodo.name.toString(),
-                ":dd": updatedTodo.dueDate.toString(),
-                ":dn": "true" === updatedTodo.done.toString()
-            },
-            ExpressionAttributeNames: {
-                "#name_todo": "name",
-                "#dueDate_todo": "dueDate",
-                "#done_todo": "done"
-
-            },
-            ReturnValues: "UPDATED_NEW"
+    async updateTodo(todo: TodoUpdate, todoId: string, userId: string) {
+        logger.info(`Updating a todo`, {
+          todoId: todoId,
+          userId: userId
+        });
+    
+        const params = {
+          TableName: this.todoTable,
+          Key: {
+            userId: userId,
+            todoId: todoId
+          },
+          ExpressionAttributeNames: {
+            '#todo_name': 'name',
+          },
+          ExpressionAttributeValues: {
+            ':name': todo.name,
+            ':dueDate': todo.dueDate,
+            ':done': todo.done,
+          },
+          UpdateExpression: 'SET #todo_name = :name, dueDate = :dueDate, done = :done',
+          ReturnValues: 'ALL_NEW',
         };
-
-        await this.docClient.update(params, function (err, data) {
-            if (err) {
-                console.error("Unable to update item. Error JSON:", JSON.stringify(err, null, 2));
-                return {
-                    statusCode: 404,
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    body: 'Unable to delete'
-
-                }
-            } else {
-                console.log("UpdateItem succeeded:", JSON.stringify(data, null, 2));
-            }
-        }).promise();
-
-        return updatedTodo
-
-    }
+    
+        const result = await this.docClient.update(params).promise();
+    
+        logger.info(`Update statement has completed without error`, { result: result });
+    
+        return result.Attributes as TodoItem;
+      }
+    
+      async updateTodoUrl(todoId: string, userId: string) {
+        logger.info(`Updating a todo's URL for item:`, {
+          todoId: todoId,
+          userId: userId
+        });
+    
+        const url = `https://${this.bucketName}.s3.amazonaws.com/${todoId}`;
+    
+        const params = {
+          TableName: this.todoTable,
+          Key: {
+            userId: userId,
+            todoId: todoId
+          },
+          ExpressionAttributeNames: {
+            '#todo_attachmentUrl': 'attachmentUrl'
+          },
+          ExpressionAttributeValues: {
+            ':attachmentUrl': url
+          },
+          UpdateExpression: 'SET #todo_attachmentUrl = :attachmentUrl',
+          ReturnValues: 'ALL_NEW',
+        };
+    
+        const result = await this.docClient.update(params).promise();
+    
+        logger.info(`Update statement has completed without error`, { result: result });
+    
+        return result.Attributes as TodoItem;
+      }
     
     async deleteTodo(userId: string, todoId: string) {
         const params = {
@@ -117,7 +134,7 @@ export class TodosAccess {
         console.log("Generating URL");
 
         const url = s3.getSignedUrl('putObject', {
-            Bucket: bucketName,
+            Bucket: this.bucketName,
             Key: todoId,
             Expires: urlExpiration,
         });

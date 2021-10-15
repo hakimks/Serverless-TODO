@@ -30,4 +30,4 @@ export const handler = middy(
      cors({
        credentials: true
   })
-)
+  )
