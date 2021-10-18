@@ -1,15 +1,10 @@
 import * as AWS from 'aws-sdk'
-import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { createLogger } from '../utils/logger'
 import { TodoItem } from '../models/TodoItem'
 import { TodoUpdate } from '../models/TodoUpdate';
 
-const XAWS = AWSXRay.captureAWS(AWS)
-const s3 = new XAWS.S3({
-    signatureVersion: 'v4'
-  })
-const urlExpiration = process.env.SIGNED_URL_EXPIRATION
+
 const logger = createLogger('TodosAccess')
 
 // TODO: Implement the dataLayer logic
@@ -17,8 +12,7 @@ export class TodosAccess {
     constructor(
         private readonly docClient: DocumentClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'}),
         private readonly todoTable = process.env.TODOS_TABLE,
-        private readonly indexName = process.env.TODOS_CREATED_AT_INDEX,
-        private readonly bucketName = process.env.ATTACHMENT_S3_BUCKET
+        private readonly indexName = process.env.TODOS_CREATED_AT_INDEX
     ) {
     }
 
@@ -80,36 +74,6 @@ export class TodosAccess {
         return result.Attributes as TodoItem;
       }
     
-      async updateTodoUrl(todoId: string, userId: string) {
-        logger.info(`Updating a todo's URL for item:`, {
-          todoId: todoId,
-          userId: userId
-        });
-    
-        const url = `https://${this.bucketName}.s3.amazonaws.com/${todoId}`;
-    
-        const params = {
-          TableName: this.todoTable,
-          Key: {
-            userId: userId,
-            todoId: todoId
-          },
-          ExpressionAttributeNames: {
-            '#todo_attachmentUrl': 'attachmentUrl'
-          },
-          ExpressionAttributeValues: {
-            ':attachmentUrl': url
-          },
-          UpdateExpression: 'SET #todo_attachmentUrl = :attachmentUrl',
-          ReturnValues: 'ALL_NEW',
-        };
-    
-        const result = await this.docClient.update(params).promise();
-    
-        logger.info(`Update statement has completed without error`, { result: result });
-    
-        return result.Attributes as TodoItem;
-      }
     
     async deleteTodo(userId: string, todoId: string) {
         const params = {
@@ -128,20 +92,26 @@ export class TodosAccess {
           }
         }).promise()
         
-      }
-
-      async createAttachmentPresignedUrl(todoId: string): Promise<string> {
-        console.log("Generating URL");
-
-        const url = s3.getSignedUrl('putObject', {
-            Bucket: this.bucketName,
-            Key: todoId,
-            Expires: urlExpiration,
-        });
-        console.log(url);
-
-        return url as string;
     }
+
+    async createAttachmentPresignedUrl(updatedTodo: any): Promise<TodoItem> {
+        await this.docClient.update({
+          TableName: this.todoTable,
+          Key: { 
+            todoId: updatedTodo.todoId, 
+            userId: updatedTodo.userId 
+          },
+          ExpressionAttributeNames: {"#A": "attachmentUrl"},
+          UpdateExpression: "set #A = :attachmentUrl",
+          ExpressionAttributeValues: {
+              ":attachmentUrl": updatedTodo.attachmentUrl,
+          },
+          ReturnValues: "UPDATED_NEW"
+        }).promise()
+          
+        return updatedTodo  
+      }
+       
     
 
 }

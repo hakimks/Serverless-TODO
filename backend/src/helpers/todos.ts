@@ -29,15 +29,19 @@ export async function createTodo(createTodoRequest: CreateTodoRequest, userId: s
     })
 }
 
-export async function updateTodo(updateTodoRequest: UpdateTodoRequest, userIdUpdate: string, todoIdUpdate: string) {
+export async function updateTodo(updateTodoRequest: UpdateTodoRequest, userId: string, todoId: string) {
 
-    return await todoAccess.updateTodo(updateTodoRequest, userIdUpdate, todoIdUpdate);
+    return await todoAccess.updateTodo(updateTodoRequest, userId, todoId);
 }
 
 export async function deleteTodo(userId: string, todoId: string){
     return await todoAccess.deleteTodo(userId, todoId)
 }
 
-export function createAttachmentPresignedUrl(todoId: string): Promise<string> {
-    return todoAccess.createAttachmentPresignedUrl(todoId);
-}
+export async function createAttachmentPresignedUrl(updateTodo, userId: string, todoId: string): Promise<TodoItem>{
+    return await todoAccess.createAttachmentPresignedUrl({
+      userId,
+      todoId,
+      attachmentUrl: updateTodo.attachmentUrl,
+    })
+  }

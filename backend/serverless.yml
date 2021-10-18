@@ -1,7 +1,7 @@
 # TODO: Change the name of the org 
 org: hakimks
-app: serverless-todo-app
-service: serverless-todo-app
+app: serverless-todo-app-hakim
+service: serverless-todo-app-hakim
 
 plugins:
   - serverless-webpack
@@ -26,7 +26,7 @@ provider:
     TODOS_TABLE: Todos-${self:provider.stage}
     TODOS_CREATED_AT_INDEX: CreatedAtIndex
     ATTACHMENT_S3_BUCKET: serverless-c4-todo-images-hakimks-${self:provider.stage}
-    SIGNED_URL_EXPIRATION: 300
+    SIGNED_URL_EXPIRATION: 3000
 
   logs:
     # Enable API Gateway logs
@@ -121,26 +121,6 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements, and request schemas
-  # UpdateTodo:
-  #   handler: src/lambda/http/updateTodo.handler
-  #   events:
-  #     - http:
-  #         method: patch
-  #         path: todos/{todoId}
-  #         cors: true
-  #         authorizer: Auth
-  #         reqValidatorName: RequestBodyValidator
-  #         documentation: 
-  #           summary: Update an existing todo item
-  #           description: update an existing Todo item
-  #           requestModels: 
-  #             'application/json': UpdateTodoRequest
-  #   iamRoleStatements:
-  #     - Effect: Allow
-  #       Action:
-  #        - dynamodb: UpdateItem
-  #        - dynamodb: GetItem
-  #       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
   
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
@@ -203,6 +183,17 @@ functions:
         Action:
           - s3:*
         Resource: arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: "Allow" # xray permissions 
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
 
   # GenerateUploadUrl:
     # handler: src/lambda/http/generateUploadUrl.handler
@@ -287,7 +278,7 @@ resources:
                 - POST
                 - DELETE
                 - HEAD
-              MaxAge: 300
+              MaxAge: 3000
 
     # TODO: Complete the policy below and attach it to the bucket defined above
     # For cross referencing the name of the bucket, use "!Ref AttachmentsBucket"
