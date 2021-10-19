@@ -6,6 +6,7 @@ service: serverless-todo-app-hakim
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
+  - serverless-reqvalidator-plugin
   - serverless-plugin-tracing
 
 provider:
@@ -101,8 +102,6 @@ functions:
   #         - dynamodb: PutItem
   #       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
-
-
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
@@ -112,13 +111,34 @@ functions:
           cors: true
           authorizer: Auth
           request:
-            schema:
+            schemas:
               application/json: ${file(models/create-todo-model.json)}
     iamRoleStatements:
       - Effect: Allow
         Action:
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+
+  # CreateTodo:
+  #   handler: src/lambda/http/createTodo.handler
+  #   events:
+  #     - http:
+  #         method: post
+  #         path: todos
+  #         cors: true
+  #         authorizer: Auth
+  #         reqValidatorName: RequestBodyValidator
+  #         documentation:
+  #           summary: Create new todo
+  #           description: Creating a new todo
+  #           requestModels:
+  #             'application/json': CreateTodoRequest
+  #   iamRoleStatements:
+  #     - Effect: Allow
+  #       Action:
+  #         - dynamodb:PutItem
+  #       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+        
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements, and request schemas
   
@@ -279,6 +299,16 @@ resources:
                 - DELETE
                 - HEAD
               MaxAge: 3000
+
+    # Request Validator
+    RequestBodyValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
 
     # TODO: Complete the policy below and attach it to the bucket defined above
     # For cross referencing the name of the bucket, use "!Ref AttachmentsBucket"
